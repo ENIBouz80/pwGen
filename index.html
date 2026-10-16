@@ -65,12 +65,61 @@
     button:active {
       background: #0056b3;
     }
+
+    .heading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .heading-row h2 {
+      margin: 0;
+    }
+
+    .help-link {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .help-link::before {
+      content: "";
+      position: absolute;
+      width: 1.1rem;
+      height: 1.1rem;
+      border: 2px solid currentColor;
+      border-radius: 2px;
+      transform: rotate(45deg);
+    }
+
+    .help-link span {
+      position: relative;
+      font-weight: bold;
+    }
+
+    .help-link:hover {
+      color: #0056b3;
+    }
+
+    .help-link:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
   </style>
 </head>
 
 <body>
 
-  <h2>pw generator</h2>
+  <div class="heading-row">
+    <h2>pw generator</h2>
+    <a class="help-link" href="./README.md" target="_blank" aria-label="Help page" title="Help page">
+      <span aria-hidden="true">?</span>
+    </a>
+  </div>
 
   <!-- 文字数スライダー -->
   <div class="control-group">
