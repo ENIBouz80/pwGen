@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<!-- pw geretrator -->
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pw generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .control-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .checkbox-group label {
+      font-weight: normal;
+      display: inline-block;
+      margin-right: 15px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .result-box {
+      display: flex;
+      gap: 10px;
+      margin: 10px 4px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:active {
+      background: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>pw generator</h2>
+
+  <!-- 文字数スライダー -->
+  <div class="control-group">
+    <label for="lengthRange">Length: <span id="lengthValue">16</span></label>
+    <input type="range" id="lengthRange" min="8" max="24" value="16" list="len-list">
+    <datalist id="len-list">
+      <option value="10"></option>
+      <option value="15"></option>
+      <option value="20"></option>
+    </datalist>
+  </div>
+
+  <!-- 文字種のチェックボックス -->
+  <div class="control-group checkbox-group">
+    <label>含める文字種:</label> (※英大文字、英小文字、数字 は必ず入ります。)<br>
+    <label><input type="checkbox" id="useSymbol" checked> 記号 (!#$_)</label>
+  </div>
+
+  <!-- 結果表示 ＆ コピーボタン -->
+  <div class="result-box">
+    <input type="text" id="resultText" readonly placeholder="ここに結果が表示されます">
+    <button id="copyBtn">Copy to Clipboard</button>
+  </div>
+
+  <!-- 生成ボタン -->
+  <button id="generateBtn" style="width: 60%; margin-bottom: 10px;">re-generate</button>
+
+  <script>
+    const lengthRange = document.getElementById('lengthRange');
+    const lengthValue = document.getElementById('lengthValue');
+    const useUpper = document.getElementById('useUpper');
+    const useLower = document.getElementById('useLower');
+    const useNumber = document.getElementById('useNumber');
+    const useSymbol = document.getElementById('useSymbol');
+    const generateBtn = document.getElementById('generateBtn');
+    const resultText = document.getElementById('resultText');
+    const copyBtn = document.getElementById('copyBtn');
+
+    // URLのクエリーストリングを取得して初期値に反映
+    const params = new URLSearchParams(window.location.search);
+
+    // lenパラメータの処理（スライダーの範囲内にあるかチェック）
+    if (params.has('len')) {
+      let lenVal = parseInt(params.get('len'), 10);
+      const min = parseInt(lengthRange.min, 10);
+      const max = parseInt(lengthRange.max, 10);
+      // もしスライダーのmin/max上限（8-24）を超える指定があれば、max値を設定
+      if (!isNaN(lenVal)) {
+        if (lenVal > max) {
+          lenVal = max;
+        }
+        if (lenVal < min) {
+          lenVal = min;
+        }
+        lengthRange.value = lenVal;
+      }
+    }
+
+    // useSymbolパラメータの処理 (例: ?useSymbol=1 または ?useSymbol=true でチェックON、0やfalseならOFF)
+    if (params.has('useSymbol')) {
+      const symVal = params.get('useSymbol').toLowerCase();
+      useSymbol.checked = (symVal === '1' || symVal === 'true');
+    }
+
+    // 画面読み込み時に初期値の表示を同期
+    lengthValue.textContent = lengthRange.value;
+
+    // スライダーの数値をリアルタイム更新
+    lengthRange.addEventListener('input', () => {
+      lengthValue.textContent = lengthRange.value;
+    });
+
+    // 安全なランダム整数を取得するヘルパー
+    function getRandomInt(max) {
+      const arr = new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      return arr[0] % max;
+    }
+
+    function generate() {
+      const length = parseInt(lengthRange.value);
+
+      const upperChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const lowerChars = 'abcdefghijkmnopqrstuvwxyz';
+      const numberChars = '0123456789';
+      const symbolChars = '!#$_';
+
+      let selectedCategories = [];
+      selectedCategories.push(upperChars);
+      selectedCategories.push(lowerChars);
+      selectedCategories.push(numberChars);
+      if (useSymbol.checked) selectedCategories.push(symbolChars);
+
+      if (selectedCategories.length === 0) {
+        resultText.value = '文字種を1つ以上選択してください';
+        return;
+      }
+
+      if (length < selectedCategories.length) {
+        resultText.value = `文字数は選択した文字種（${selectedCategories.length}種類）以上にしてください`;
+        return;
+      }
+
+      let resultChars = [];
+
+      // 1. チェックされた各文字種から「必ず1文字ずつ」最初に確保する
+      selectedCategories.forEach(category => {
+        const idx = getRandomInt(category.length);
+        resultChars.push(category[idx]);
+      });
+
+      // 2. 残りの文字数分を、チェックされたすべての文字プールからランダムに埋める
+      let allChars = selectedCategories.join('');
+      for (let i = resultChars.length; i < length; i++) {
+        const idx = getRandomInt(allChars.length);
+        resultChars.push(allChars[idx]);
+      }
+
+      // 3. 最初に選んだ文字が常に先頭に来るのを防ぐため、全体をシャッフルする (Fisher-Yatesアルゴリズム)
+      // ただし、連続する同じ文字が出た場合は、繰り返しシャッフルを行う
+      let shuffledChars;
+
+      for (let attempt = 0; attempt < 100; attempt++) {
+        shuffledChars = [...resultChars];
+        for (let i = shuffledChars.length - 1; i > 0; i--) {
+          const j = getRandomInt(i + 1);
+          [shuffledChars[i], shuffledChars[j]] = [shuffledChars[j], shuffledChars[i]];
+        }
+        const hasAdjacentDuplicate = shuffledChars.some(
+          (char, index) => index > 0 && char === shuffledChars[index - 1]
+        );
+        if (!hasAdjacentDuplicate) break;
+      }
+
+      const hasAdjacentDuplicate = shuffledChars.some(
+        (char, index) => index > 0 && char === shuffledChars[index - 1]
+      );
+
+      if (hasAdjacentDuplicate) {
+        resultText.value = '連続しない並びを生成できませんでした。もう一度お試しください';
+        return;
+      }
+
+      resultText.value = shuffledChars.join('');
+    }
+
+    // 生成ボタン押下時
+    generateBtn.addEventListener('click', generate);
+
+    // 自動でも一度生成しておく
+    generate();
+
+    // クリップボードにコピー
+    copyBtn.addEventListener('click', () => {
+      if (!resultText.value || resultText.value.includes('ERROR') || resultText.value.includes('選択してください')) return;
+      navigator.clipboard.writeText(resultText.value).then(() => {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copy successful!';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 1500);
+      });
+    });
+  </script>
+
+</body>
+
+</html>
